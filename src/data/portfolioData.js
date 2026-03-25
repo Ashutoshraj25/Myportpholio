@@ -116,7 +116,7 @@ export const portfolioData = {
   ],
   projects: [
     {
-      title: 'Academate',
+      title: 'AcadMate',
       description:
         'A student-focused academic management platform designed to streamline notes, tasks, and collaboration.',
       features: ['Organized academic workflows', 'Clean and responsive UI', 'Focus on usability'],
