@@ -44,7 +44,7 @@ export const portfolioData = {
   profile: {
     name: 'Ashutosh Raj',
     role: 'Full Stack Developer',
-    image: '/WhatsApp%20Image%202026-03-12%20at%2010.46.50%20AM.jpeg',
+    image: '/profile-photo.jpeg',
     description:
       'Full Stack Developer specializing in scalable applications, polished UI, and efficient backend systems.',
   },

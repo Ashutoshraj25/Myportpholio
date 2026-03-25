@@ -155,7 +155,7 @@ export default function Hero() {
                 <div className="photo-glow" />
                 <img
                   className="photo-image"
-                  src="/WhatsApp%20Image%202026-03-12%20at%2010.46.50%20AM.jpeg"
+                  src="/profile-photo.jpeg"
                   alt="Ashutosh Raj portrait"
                 />
               </div>
