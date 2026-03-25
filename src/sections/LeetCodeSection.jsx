@@ -9,8 +9,7 @@ import SectionHeading from '../components/SectionHeading'
 
 const LEETCODE_USERNAME = 'rajashutosh324a'
 const LEETCODE_PROFILE_URL = `https://leetcode.com/u/${LEETCODE_USERNAME}/`
-const STATS_API_URL = `https://alfa-leetcode-api.onrender.com/userProfile/${LEETCODE_USERNAME}`
-const GRAPHQL_API_URL = 'https://leetcode.com/graphql'
+const LEETCODE_API_URL = `/api/leetcode?username=${LEETCODE_USERNAME}`
 const STATS_CACHE_KEY = `leetcode-stats:${LEETCODE_USERNAME}`
 const STATS_CACHE_TTL = 1000 * 60 * 30
 const fallbackStats = {
@@ -22,21 +21,6 @@ const fallbackStats = {
   submissionCalendar: null,
   recentSubmissions: [],
 }
-
-const DAILY_QUESTION_QUERY = `
-  query dailyQuestion {
-    activeDailyCodingChallengeQuestion {
-      date
-      link
-      question {
-        difficulty
-        questionFrontendId
-        title
-        titleSlug
-      }
-    }
-  }
-`
 
 const statDefinitions = [
   { key: 'totalSolved', label: 'Total Solved', accent: 'from-cyan-300 via-sky-300 to-blue-500' },
@@ -237,7 +221,7 @@ export default function LeetCodeSection() {
   useEffect(() => {
     const controller = new AbortController()
 
-    async function loadStats() {
+    async function loadLeetCodeData() {
       try {
         setStatsState((current) => ({
           ...current,
@@ -246,17 +230,23 @@ export default function LeetCodeSection() {
           notice: '',
         }))
 
-        const response = await fetch(STATS_API_URL, { signal: controller.signal })
+        const response = await fetch(LEETCODE_API_URL, { signal: controller.signal })
 
         if (!response.ok) {
-          throw new Error(`Stats request failed with ${response.status}`)
+          throw new Error(`LeetCode request failed with ${response.status}`)
         }
 
         const payload = await response.json()
-        const normalized = normalizeStats(payload)
+        const normalized = payload?.stats ? normalizeStats(payload.stats) : fallbackStats
 
         writeStatsCache(normalized)
         setStatsState({ status: 'success', data: normalized, error: false, notice: '' })
+
+        if (payload?.dailyQuestion?.question?.title) {
+          setDailyState({ status: 'success', data: payload.dailyQuestion, error: '' })
+        } else {
+          setDailyState({ status: 'error', data: null, error: 'Daily question data is unavailable' })
+        }
       } catch (error) {
         if (error.name !== 'AbortError') {
           const cached = readStatsCache()
@@ -268,40 +258,12 @@ export default function LeetCodeSection() {
             error: true,
             notice: 'Live data unavailable. Showing latest known stats.',
           })
-        }
-      }
-    }
-
-    async function loadDailyQuestion() {
-      try {
-        const response = await fetch(GRAPHQL_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: DAILY_QUESTION_QUERY }),
-          signal: controller.signal,
-        })
-
-        if (!response.ok) {
-          throw new Error(`Daily question request failed with ${response.status}`)
-        }
-
-        const payload = await response.json()
-        const dailyQuestion = payload?.data?.activeDailyCodingChallengeQuestion
-
-        if (!dailyQuestion?.question?.title) {
-          throw new Error('Daily question data is unavailable')
-        }
-
-        setDailyState({ status: 'success', data: dailyQuestion, error: '' })
-      } catch (error) {
-        if (error.name !== 'AbortError') {
           setDailyState({ status: 'error', data: null, error: error.message })
         }
       }
     }
 
-    loadStats()
-    loadDailyQuestion()
+    loadLeetCodeData()
 
     return () => controller.abort()
   }, [])
@@ -325,7 +287,7 @@ export default function LeetCodeSection() {
           <SectionHeading
             kicker="LeetCode Live Stats"
             title="Consistency in problem solving, backed by real coding activity"
-            description="Live data from the public LeetCode profile and daily challenge feed, presented with a recruiter-friendly focus on consistency and technical depth."
+            description="Live data from the deployed portfolio API, keeping LeetCode stats and daily challenge data reliable in production."
           />
 
           {statsState.error ? (
@@ -371,8 +333,8 @@ export default function LeetCodeSection() {
                         {statsState.error
                           ? 'Showing a reliable fallback so the section stays polished even when the live endpoint is temporarily unavailable.'
                           : stat.key === 'totalSolved'
-                            ? 'Overall solved count pulled from the current live LeetCode profile.'
-                            : 'Difficulty-wise solved counts sourced from the live profile response.'}
+                            ? 'Overall solved count pulled through the deployed portfolio API.'
+                            : 'Difficulty-wise solved counts sourced through the deployed portfolio API.'}
                       </p>
                     </div>
                   </GlassCard>
