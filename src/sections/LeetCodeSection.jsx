@@ -86,6 +86,10 @@ function getConsistencySummary(calendarMeta) {
 
 function normalizeStats(payload) {
   const data = payload?.data ?? payload
+  const submissionCalendar =
+    typeof data?.submissionCalendar === 'string'
+      ? JSON.parse(data.submissionCalendar || '{}')
+      : data?.submissionCalendar
 
   return {
     totalSolved: Number.isFinite(Number(data?.totalSolved)) ? Number(data.totalSolved) : fallbackStats.totalSolved,
@@ -93,7 +97,7 @@ function normalizeStats(payload) {
     easySolved: Number.isFinite(Number(data?.easySolved)) ? Number(data.easySolved) : fallbackStats.easySolved,
     mediumSolved: Number.isFinite(Number(data?.mediumSolved)) ? Number(data.mediumSolved) : fallbackStats.mediumSolved,
     hardSolved: Number.isFinite(Number(data?.hardSolved)) ? Number(data.hardSolved) : fallbackStats.hardSolved,
-    submissionCalendar: data?.submissionCalendar && typeof data.submissionCalendar === 'object' ? data.submissionCalendar : null,
+    submissionCalendar: submissionCalendar && typeof submissionCalendar === 'object' ? submissionCalendar : null,
     recentSubmissions: Array.isArray(data?.recentSubmissions) ? data.recentSubmissions.slice(0, 3) : [],
   }
 }

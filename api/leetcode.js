@@ -1,3 +1,27 @@
+const LEETCODE_GRAPHQL_URL = 'https://leetcode.com/graphql'
+
+const PROFILE_QUERY = `
+  query portfolioLeetCodeProfile($username: String!, $limit: Int!) {
+    matchedUser(username: $username) {
+      submitStatsGlobal {
+        acSubmissionNum {
+          difficulty
+          count
+          submissions
+        }
+      }
+      userCalendar {
+        submissionCalendar
+      }
+    }
+    recentAcSubmissionList(username: $username, limit: $limit) {
+      title
+      titleSlug
+      timestamp
+    }
+  }
+`
+
 const DAILY_QUESTION_QUERY = `
   query dailyQuestion {
     activeDailyCodingChallengeQuestion {
@@ -23,24 +47,64 @@ async function fetchJson(url, options = {}) {
   return response.json()
 }
 
+async function fetchLeetCodeGraphql(query, variables = {}) {
+  const payload = await fetchJson(LEETCODE_GRAPHQL_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: 'https://leetcode.com',
+      Referer: 'https://leetcode.com',
+      'User-Agent': 'Mozilla/5.0',
+    },
+    body: JSON.stringify({ query, variables }),
+  })
+
+  if (payload?.errors?.length) {
+    throw new Error(payload.errors[0]?.message || 'LeetCode GraphQL request failed')
+  }
+
+  return payload.data
+}
+
+function extractSolvedCount(list, difficulty) {
+  const match = list.find((item) => item?.difficulty === difficulty)
+  const count = Number(match?.count)
+  return Number.isFinite(count) ? count : 0
+}
+
+function normalizeStats(profileData) {
+  const acceptedCounts = profileData?.matchedUser?.submitStatsGlobal?.acSubmissionNum ?? []
+  const submissionCalendar = profileData?.matchedUser?.userCalendar?.submissionCalendar
+  const parsedCalendar =
+    typeof submissionCalendar === 'string' ? JSON.parse(submissionCalendar || '{}') : submissionCalendar ?? null
+
+  return {
+    totalSolved: extractSolvedCount(acceptedCounts, 'All'),
+    easySolved: extractSolvedCount(acceptedCounts, 'Easy'),
+    mediumSolved: extractSolvedCount(acceptedCounts, 'Medium'),
+    hardSolved: extractSolvedCount(acceptedCounts, 'Hard'),
+    submissionCalendar: parsedCalendar && typeof parsedCalendar === 'object' ? parsedCalendar : null,
+    recentSubmissions: (profileData?.recentAcSubmissionList ?? []).slice(0, 3).map((submission) => ({
+      ...submission,
+      lang: 'Accepted',
+      statusDisplay: 'Accepted',
+    })),
+  }
+}
+
 export default async function handler(req, res) {
   const username = req.query?.username || 'rajashutosh324a'
-  const statsUrl = `https://alfa-leetcode-api.onrender.com/userProfile/${username}`
 
   try {
     const [statsPayload, dailyPayload] = await Promise.allSettled([
-      fetchJson(statsUrl),
-      fetchJson('https://leetcode.com/graphql', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: DAILY_QUESTION_QUERY }),
-      }),
+      fetchLeetCodeGraphql(PROFILE_QUERY, { username, limit: 3 }),
+      fetchLeetCodeGraphql(DAILY_QUESTION_QUERY),
     ])
 
-    const stats = statsPayload.status === 'fulfilled' ? statsPayload.value : null
+    const stats = statsPayload.status === 'fulfilled' ? normalizeStats(statsPayload.value) : null
     const dailyQuestion =
       dailyPayload.status === 'fulfilled'
-        ? dailyPayload.value?.data?.activeDailyCodingChallengeQuestion ?? null
+        ? dailyPayload.value?.activeDailyCodingChallengeQuestion ?? null
         : null
 
     if (!stats && !dailyQuestion) {
