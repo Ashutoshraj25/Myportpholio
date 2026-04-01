@@ -96,7 +96,7 @@ export const portfolioData = {
     },
     {
       label: 'Coding Profile',
-      display: '5? HackerRank',
+      display: '5* HackerRank',
       description: 'Strong problem-solving skills with consistent coding performance.',
       icon: FaStar,
     },
@@ -156,9 +156,9 @@ export const portfolioData = {
     { label: 'LeetCode', value: 'leetcode.com/u/rajashutosh324a', href: 'https://leetcode.com/u/rajashutosh324a/', icon: SiLeetcode },
   ],
   contact: {
-    heading: 'Let’s build something impactful together.',
+    heading: 'Let's build something impactful together.',
     description:
-      'I’m open to internships, full-time roles, and collaborations where I can contribute through strong problem-solving and full-stack development.',
+      'I'm open to internships, full-time roles, and collaborations where I can contribute through strong problem-solving and full-stack development.',
     email: 'rajashutosh324a@gmail.com',
     badge: 'Available for New Opportunities',
     availability: ['Internships', 'Full-time roles', 'Freelance / projects'],
